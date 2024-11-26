@@ -11,10 +11,10 @@ Defines a contract for minimal API endpoint handlers. Implementations of this in
 
 #### HandleEndpoint
 ```csharp
-void HandleEndpoint(IEndpointRouteBuilder endpoint);
+void HandleEndpoint(WebApplication app);
 ```
 ##### Parameters
-- `endpoint`: The `IEndpointRouteBuilder` instance used to configure the endpoint.
+- `app`: The `WebApplication` instance used to configure the endpoint.
 
 ##### Description
 Handles the registration of the endpoint with the specified endpoint route builder. Implementing classes should provide the specific logic for configuring the endpoint.
@@ -75,9 +75,9 @@ Create a class that implements the `IMinimalApiEndpoint` interface.
 ```csharp
 public class HelloWorldEndpoint : IMinimalApiEndpoint
 {
-    public void HandleEndpoint(IEndpointRouteBuilder endpoints)
+    public void HandleEndpoint(WebApplication app)
     {
-        endpoints.MapGet("/hello", () => "Hello, World!");
+        app.MapGet("/hello", () => "Hello, World!");
     }
 }
 ```
@@ -110,12 +110,12 @@ using Microsoft.Extensions.Hosting;
 
 public interface IMinimalApiEndpoint
 {
-    void HandleEndpoint(IEndpointRouteBuilder endpoint);
+    void HandleEndpoint(WebApplication app);
 }
 
 public class HelloWorldEndpoint : IMinimalApiEndpoint
 {
-    public void HandleEndpoint(IEndpointRouteBuilder endpoints)
+    public void HandleEndpoint(WebApplication app)
     {
         endpoints.MapGet("/hello", () => "Hello, World!");
     }

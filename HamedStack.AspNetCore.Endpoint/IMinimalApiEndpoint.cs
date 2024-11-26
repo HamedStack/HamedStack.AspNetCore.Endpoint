@@ -1,15 +1,18 @@
-﻿using Microsoft.AspNetCore.Routing;
+﻿using Microsoft.AspNetCore.Builder;
 
 namespace HamedStack.AspNetCore.Endpoint;
 
 /// <summary>
-/// Defines a contract for minimal API endpoint handlers. Implementations should define how an endpoint is handled.
+/// Represents a contract for defining minimal API endpoint handlers. 
+/// Implementing classes or structures are expected to define the logic 
+/// for handling a specific endpoint within a <see cref="WebApplication"/>.
 /// </summary>
 public interface IMinimalApiEndpoint
 {
     /// <summary>
-    /// Handles the endpoint registration with the specified endpoint route builder.
+    /// Configures and handles the associated endpoint within the provided 
+    /// <see cref="WebApplication"/> instance.
     /// </summary>
-    /// <param name="endpoint">The endpoint route builder to configure.</param>
-    void HandleEndpoint(IEndpointRouteBuilder endpoint);
+    /// <param name="app">The <see cref="WebApplication"/> instance used to configure the endpoint.</param>
+    void HandleEndpoint(WebApplication app);
 }
