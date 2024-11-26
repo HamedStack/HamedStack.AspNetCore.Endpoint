@@ -1,162 +1,160 @@
-# HamedStack.AspNetCore.Endpoint
+## **Overview**
 
-This documentation provides detailed instructions for handling minimal API endpoints in an ASP.NET Core application using the latest version of ASP.NET Core. It introduces the `IMinimalApiEndpoint` interface for defining endpoint handlers and the `MinimalApiEndpointsExtensions` class for registering and mapping these handlers.
+The `MinimalApiEndpointBase` library simplifies the organization, registration, and mapping of minimal API endpoints in your ASP.NET Core applications. It uses an abstract base class for endpoint logic, making your API endpoints modular and testable.
 
-## IMinimalApiEndpoint Interface
+---
 
-### Summary
-Defines a contract for minimal API endpoint handlers. Implementations of this interface should define the logic for handling an API endpoint.
+## **Key Components**
 
-### Members
+### **1. `MinimalApiEndpointBase`**
+This is the abstract base class that your API endpoints should inherit from. It provides:
 
-#### HandleEndpoint
-```csharp
-void HandleEndpoint(WebApplication app);
-```
-##### Parameters
-- `app`: The `WebApplication` instance used to configure the endpoint.
+- **Properties**:
+  - `Application`: The `WebApplication` instance for the current application.
+  - `Services`: An `IServiceProvider` instance for dependency injection.
 
-##### Description
-Handles the registration of the endpoint with the specified endpoint route builder. Implementing classes should provide the specific logic for configuring the endpoint.
+- **Abstract Method**:
+  - `HandleEndpoint(IEndpointRouteBuilder endpoint)`: Must be implemented by derived classes to define endpoint routing and logic.
 
-## MinimalApiEndpointsExtensions Class
+- **Method**:
+  - `Initialize(WebApplication app)`: Used internally to associate the base class with the current `WebApplication`.
 
-### Summary
-Provides extension methods to register and map minimal API endpoints within an ASP.NET Core application.
+---
 
-### Methods
+### **2. Extension Methods**
 
-#### AddMinimalApiEndpoints
-```csharp
-public static IServiceCollection AddMinimalApiEndpoints(this IServiceCollection services)
-```
-##### Parameters
-- `services`: The `IServiceCollection` to add the services to.
+#### **`AddMinimalApiEndpoints(IServiceCollection services)`**
+- Scans all loaded assemblies to find implementations of `MinimalApiEndpointBase`.
+- Registers these implementations as services in the DI container.
 
-##### Returns
-`IServiceCollection`: The service collection for chaining.
+#### **`MapMinimalApiEndpoints(WebApplication app)`**
+- Resolves all registered `MinimalApiEndpointBase` services.
+- Calls their `Initialize` and `HandleEndpoint` methods to configure routes within the application.
 
-##### Description
-Registers all implementations of `IMinimalApiEndpoint` found in the application into the service collection. This method scans the application for types that implement the `IMinimalApiEndpoint` interface and registers them as transient services.
+---
 
-##### Example Usage
-```csharp
-var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddMinimalApiEndpoints();
-```
+## **Setup and Usage**
 
-#### MapMinimalApiEndpoints
-```csharp
-public static WebApplication MapMinimalApiEndpoints(this WebApplication app)
-```
-##### Parameters
-- `app`: The `WebApplication` to map the endpoints to.
+Follow these steps to integrate and use the library in your ASP.NET Core application:
 
-##### Returns
-`WebApplication`: The web application for chaining.
-
-##### Description
-Maps all registered minimal API endpoints into the `WebApplication`, enabling their routes. This method retrieves all services that implement the `IMinimalApiEndpoint` interface and invokes their `HandleEndpoint` method to configure the endpoints.
-
-##### Example Usage
-```csharp
-var app = builder.Build();
-app.MapMinimalApiEndpoints();
-app.Run();
-```
-
-## Implementation Example
-
-Below is a complete example demonstrating how to implement and use the minimal API endpoint handler system in an ASP.NET Core application.
-
-### Step 1: Define an Endpoint Handler
-Create a class that implements the `IMinimalApiEndpoint` interface.
+### **1. Create an Endpoint Class**
+Define an endpoint by inheriting from `MinimalApiEndpointBase`:
 
 ```csharp
-public class HelloWorldEndpoint : IMinimalApiEndpoint
+public class WeatherEndpoint : MinimalApiEndpointBase
 {
-    public void HandleEndpoint(WebApplication app)
+    public override void HandleEndpoint(IEndpointRouteBuilder endpoint)
     {
-        app.MapGet("/hello", () => "Hello, World!");
+        endpoint.MapGet("/weather", async context =>
+        {
+            var forecast = new[] { "Sunny", "Cloudy", "Rainy" };
+            await context.Response.WriteAsJsonAsync(forecast);
+        });
     }
 }
 ```
 
-### Step 2: Register the Endpoint Handlers
-In your program setup, register the endpoint handlers using the provided extension method.
+### **2. Register Endpoints in Dependency Injection**
+In the `Program.cs` file, register the endpoints by calling `AddMinimalApiEndpoints`:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
 builder.Services.AddMinimalApiEndpoints();
+
+var app = builder.Build();
 ```
 
-### Step 3: Configure the Application
-Ensure your application maps the registered endpoints and runs correctly.
+### **3. Map Endpoints to the WebApplication**
+Use `MapMinimalApiEndpoints` to map all registered endpoints during the application configuration:
 
 ```csharp
-var app = builder.Build();
+// Configure the HTTP request pipeline.
 app.MapMinimalApiEndpoints();
+
 app.Run();
 ```
 
-### Full Example
-Combining all steps into a complete example:
+---
+
+## **Example Application**
+
+Here’s a complete example of an application using the library:
 
 ```csharp
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using System;
 
-public interface IMinimalApiEndpoint
+public class WeatherEndpoint : MinimalApiEndpointBase
 {
-    void HandleEndpoint(WebApplication app);
-}
-
-public class HelloWorldEndpoint : IMinimalApiEndpoint
-{
-    public void HandleEndpoint(WebApplication app)
+    public override void HandleEndpoint(IEndpointRouteBuilder endpoint)
     {
-        endpoints.MapGet("/hello", () => "Hello, World!");
-    }
-}
-
-public static class MinimalApiEndpointsExtensions
-{
-    public static IServiceCollection AddMinimalApiEndpoints(this IServiceCollection services)
-    {
-        var endpointTypes = AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(assembly => assembly.GetTypes())
-            .Where(type => typeof(IMinimalApiEndpoint).IsAssignableFrom(type) && type is { IsInterface: false, IsAbstract: false });
-
-        foreach (var type in endpointTypes)
+        endpoint.MapGet("/weather", async context =>
         {
-            services.AddTransient(typeof(IMinimalApiEndpoint), type);
-        }
-
-        return services;
-    }
-
-    public static WebApplication MapMinimalApiEndpoints(this WebApplication app)
-    {
-        var endpoints = app.Services.GetServices<IMinimalApiEndpoint>();
-        foreach (var endpoint in endpoints)
-        {
-            endpoint.HandleEndpoint(app);
-        }
-
-        return app;
+            var forecast = new[] { "Sunny", "Cloudy", "Rainy" };
+            await context.Response.WriteAsJsonAsync(forecast);
+        });
     }
 }
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Register all endpoint implementations.
 builder.Services.AddMinimalApiEndpoints();
 
 var app = builder.Build();
+
+// Map endpoints to routes.
 app.MapMinimalApiEndpoints();
+
 app.Run();
 ```
 
-## Conclusion
+---
 
-By following the outlined steps and utilizing the provided interface and extension methods, you can create a scalable and maintainable system for managing minimal API endpoints in your ASP.NET Core application. This approach allows for a clean separation of endpoint configuration logic and centralizes the registration and mapping of endpoints.
+## **Advanced Features**
+
+### **Dynamic Dependency Injection**
+Use the `Services` property in your endpoint implementation to resolve dependencies:
+
+```csharp
+public class GreetingEndpoint : MinimalApiEndpointBase
+{
+    public override void HandleEndpoint(IEndpointRouteBuilder endpoint)
+    {
+        endpoint.MapGet("/greet", async context =>
+        {
+            var logger = Services.GetRequiredService<ILogger<GreetingEndpoint>>();
+            logger.LogInformation("Greet endpoint called");
+
+            await context.Response.WriteAsync("Hello, world!");
+        });
+    }
+}
+```
+
+### Access to `Application`
+The `Application` property provides access to the `WebApplication` instance, enabling you to perform application-level configurations or access global middleware and services:
+
+```csharp
+public class CustomMiddlewareEndpoint : MinimalApiEndpointBase
+{
+    public override void HandleEndpoint(IEndpointRouteBuilder endpoints)
+    {
+        Application.Use(async (context, next) =>
+        {
+            // Custom logic before passing to the next middleware
+            context.Response.Headers.Add("X-Custom-Header", "HelloFromMiddleware");
+            await next();
+        });
+
+        endpoints.MapGet("/custom-middleware", async context =>
+        {
+            await context.Response.WriteAsync("Middleware is applied!");
+        });
+    }
+}
+```
