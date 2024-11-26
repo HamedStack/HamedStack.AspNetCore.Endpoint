@@ -158,3 +158,23 @@ public class CustomMiddlewareEndpoint : MinimalApiEndpointBase
     }
 }
 ```
+
+### Read form `Configuration`
+You can use the `Configuration` property to access application settings, such as those defined in `appsettings.json`, environment variables, or other sources.
+
+```csharp
+public class GreetingEndpoint : MinimalApiEndpointBase
+{
+    public override void HandleEndpoint(IEndpointRouteBuilder endpoint)
+    {
+        endpoint.MapGet("/greet", async context =>
+        {
+            var greetingMessage = Configuration["Greeting"]; // Access configuration setting
+            await context.Response.WriteAsync(greetingMessage);
+        });
+    }
+}
+```
+
+
+

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
 
 namespace HamedStack.AspNetCore.Endpoint;
 
@@ -19,6 +20,12 @@ public abstract class MinimalApiEndpointBase
     /// This allows derived classes to resolve dependencies from the application's service container.
     /// </summary>
     protected IServiceProvider Services => Application.Services;
+
+    /// <summary>
+    /// Gets the <see cref="IConfiguration"/> instance for accessing application configuration settings.
+    /// This property provides access to configuration values stored in appsettings or environment variables.
+    /// </summary>
+    protected IConfiguration Configuration => Application.Configuration;
 
     /// <summary>
     /// Configures and handles the minimal API endpoint using the provided <see cref="IEndpointRouteBuilder"/>.
